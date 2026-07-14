@@ -54,6 +54,21 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Delete any existing release and assets for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Re-running a release workflow on the same tag should overwrite,
+          # not pile up. softprops/action-gh-release won't overwrite an
+          # existing release, so we delete it first if present.
+          EXISTING=$(gh release view "${{ github.ref_name }}" --json id -q '.id' 2>/dev/null || echo "")
+          if [ -n "$EXISTING" ]; then
+            echo "Deleting existing release ${{ github.ref_name }} (id=$EXISTING) before recreating."
+            gh release delete "${{ github.ref_name }}" --yes
+          else
+            echo "No existing release for ${{ github.ref_name }} — nothing to delete."
+          fi
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
