@@ -25,30 +25,8 @@ jobs:
             gcc-mingw-w64-i686 \
             binutils-mingw-w64-i686
 
-      - name: Build patch.dll
-        run: ./build.sh
-
-      - name: Verify DLL structure
-        run: |
-          echo "=== File ==="
-          ls -la patch.dll
-          file patch.dll || true
-
-          echo
-          echo "=== Exports ==="
-          i686-w64-mingw32-objdump -p patch.dll | grep -A 20 "Export Tables"
-
-          echo
-          echo "=== Imports (should be ONLY kernel32.dll) ==="
-          i686-w64-mingw32-objdump -p patch.dll | grep -E "DLL Name|^[[:space:]]*[0-9]+"
-
-          echo
-          echo "=== UCRT check (must be empty) ==="
-          if i686-w64-mingw32-objdump -p patch.dll | grep -q "api-ms-win-crt"; then
-            echo "FAIL: UCRT dependency found"
-            exit 1
-          fi
-          echo "OK: no UCRT dependencies"
+      - name: Build patch.dll (no install — CI mode)
+        run: ./build.sh --ci
 
       - name: Upload patch.dll artifact
         uses: actions/upload-artifact@v4

@@ -25,8 +25,8 @@ jobs:
             gcc-mingw-w64-i686 \
             binutils-mingw-w64-i686
 
-      - name: Build patch.dll
-        run: ./build.sh
+      - name: Build patch.dll (no install — CI mode)
+        run: ./build.sh --ci
 
       - name: Extract changelog section for this version
         id: changelog
