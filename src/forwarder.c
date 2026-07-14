@@ -15,6 +15,17 @@
  *   i686-w64-mingw32-gcc -shared -Wl,--image-base=0x10000000 \
  *     -Wl,-u,_DirectDrawCreate@12 -Wl,-u,_DirectDrawEnumerateA@8 \
  *     -o patch.dll src/forwarder.c
+ *
+ * The build script additionally:
+ * - Bypasses the CRT startup wrapper (--entry=_DllMainCRTStartup is the
+ *   default; we override with --entry=DllMain) so the binary contains
+ *   only our forwarder code.
+ * - Strips debug info (-g0, --strip-debug) and unwind tables
+ *   (-fno-asynchronous-unwind-tables).
+ * - Garbage-collects unused sections (--gc-sections).
+ *
+ * Result: a ~5 KB DLL, matching the size of the GOG-shipped patch.dll
+ * that uses the same minimal forwarder pattern.
  */
 #include <windows.h>
 
@@ -69,11 +80,16 @@ HRESULT WINAPI DirectDrawEnumerateA(
     return fn(lpCallback, lpContext);
 }
 
+/* Entry point. With -Wl,--entry=DllMain (undecorated), the loader calls
+ * this directly, bypassing _DllMainCRTStartup. We do our own minimal
+ * init: disable thread-library calls (we don't need them). */
 BOOL WINAPI DllMain(
     HINSTANCE hinstDLL,
     DWORD fdwReason,
     LPVOID lpvReserved)
 {
+    (void)hinstDLL;
+    (void)lpvReserved;
     if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);
     }

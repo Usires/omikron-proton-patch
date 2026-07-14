@@ -62,7 +62,7 @@ i686-w64-mingw32-gcc -shared -Os -g0 \
   -Wl,-u,_DirectDrawCreate@12 \
   -Wl,-u,_DirectDrawEnumerateA@8 \
   -Wl,--kill-at \
-  -Wl,--entry=_DllMain@12 \
+  -Wl,--entry=DllMain \
   -Wl,--no-default-excludes \
   -o patch.dll \
   src/forwarder.c \
