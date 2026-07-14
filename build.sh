@@ -12,7 +12,7 @@ i686-w64-mingw32-gcc -shared \
   -Wl,-u,_DirectDrawEnumerateA@8 \
   -Wl,--kill-at \
   -o patch.dll \
-  dummy_patch.c \
+  src/forwarder.c \
   -lgcc
 
 echo

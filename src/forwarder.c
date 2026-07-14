@@ -1,15 +1,20 @@
 /*
- * Forwarder-patch.dll für Omikron: The Nomad Soul
+ * forwarder.c — DirectDraw forwarder DLL for Omikron: The Nomad Soul (GOG).
  *
- * Diese DLL exportiert die zwei Funktionen die Runtime.exe importiert
- * (DirectDrawCreate, DirectDrawEnumerateA) und leitet sie an Wine's
- * eigene ddraw.dll weiter. Damit sieht das Spiel aus als ob unsere
- * DLL funktioniert, aber Wine's moderner DirectDraw-Stack übernimmt.
+ * The GOG release of Omikron ships a small indirection layer: Runtime.exe
+ * imports DirectDrawCreate and DirectDrawEnumerateA from patch.dll, not
+ * directly from ddraw.dll. This file is the source for the replacement
+ * patch.dll that ships in this repository.
  *
- * Compile:
+ * The two exported functions forward their calls to Wine's built-in
+ * ddraw.dll via LoadLibraryA + GetProcAddress. Wine's modern DirectDraw
+ * stack handles the actual work, layered on top of dgVoodoo2 (D3D -> Vulkan)
+ * and DSOAL (DirectSound3D -> OpenAL).
+ *
+ * Build via ./build.sh (which cross-compiles with i686-w64-mingw32-gcc):
  *   i686-w64-mingw32-gcc -shared -Wl,--image-base=0x10000000 \
  *     -Wl,-u,_DirectDrawCreate@12 -Wl,-u,_DirectDrawEnumerateA@8 \
- *     -o patch.dll dummy_patch.c
+ *     -o patch.dll src/forwarder.c
  */
 #include <windows.h>
 
