@@ -32,16 +32,27 @@ jobs:
         id: changelog
         run: |
           # Extract the section starting at the version header matching
-          # the current tag and ending at the next version header (or EOF).
-          VERSION="${GITHUB_REF_NAME}"   # e.g. v0.1.0
-          SECTION=$(awk "/^## \\[${VERSION}\\]/,/^## \\[/{ if (/^## \\[${VERSION}\\]/) p=1; else if (/^## \\[/) p=0; if (p) print }" CHANGELOG.md)
+          # the current tag (with or without the leading 'v') and ending
+          # at the next version header (or EOF).
+          # CHANGELOG.md follows Keep a Changelog format: "## [0.1.0] - DATE".
+          TAG="${GITHUB_REF_NAME}"                    # e.g. v0.1.0
+          VERSION="${TAG#v}"                          # e.g. 0.1.0
+          SECTION=$(awk -v v="${VERSION}" '
+            /^## \[/ {
+              if (p) exit
+              if ($0 ~ "^## \\[" v "\\]") { p=1; print; next }
+            }
+            p { print }
+          ' CHANGELOG.md || true)
           if [ -z "$SECTION" ]; then
             echo "::warning::No CHANGELOG.md section found for ${VERSION}; using default notes."
-            SECTION="Release ${VERSION}. See CHANGELOG.md for details."
+            SECTION="Release ${TAG}. See CHANGELOG.md for details."
           fi
-          echo "section<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$SECTION" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "section<<EOF"
+            echo "$SECTION"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
