@@ -14,24 +14,27 @@ Quantic Dream) run under Linux via Wine or Proton.
 
 ## What it does
 
-The GOG release of the game ships a small **indirection layer**: `Runtime.exe`
-imports `DirectDrawCreate` and `DirectDrawEnumerateA` from a file called
-`patch.dll` (not directly from `ddraw.dll`). This indirection was added by
-GOG as part of their 2017 re-release — it lets the DirectDraw provider be
-swapped out without modifying the original 1999 binary.
+The game's `Runtime.exe` imports `DirectDrawCreate` and `DirectDrawEnumerateA`
+through a small indirection layer that lets the DirectDraw provider be
+swapped without modifying the 1999 binary. Depending on which release you
+have, this indirection takes different forms:
+
+- **GOG release (2017):** `Runtime.exe` imports the two functions from a
+  file called `patch.dll`, which is itself a tiny DirectDraw shim. We
+  replace GOG's `patch.dll` with our forwarder.
+- **Steam release (1999 original):** the indirection was added later by
+  GOG; the original Steam binary may import directly from `ddraw.dll`.
+  Proton's DLL override system (`WINEDLLOVERRIDES`) usually routes this
+  to Wine's builtin `ddraw.dll` without our intervention — see the Steam
+  install notes below for the edge cases.
 
 This repository ships a replacement `patch.dll` (~5 KB, ~150 lines of C)
-that **forwards those two functions to Wine's built-in `ddraw.dll`** via
-`LoadLibraryA` + `GetProcAddress`. Drop it next to `Runtime.exe` and the
-game thinks it's talking to a real DirectDraw provider; in reality, Wine's
-modern DirectDraw stack handles the calls — including the `dgVoodoo2`
-`D3DImm.dll` / `DDraw.dll` chain that maps legacy DirectDraw to Vulkan.
-
-> **Steam release note:** the 1999 Steam version of *Omikron* predates
-> GOG's indirection layer and links `Runtime.exe` directly against
-> `ddraw.dll`. This patch is **GOG-only**. On Steam, you'd need to add
-> the indirection yourself (e.g. by writing your own `patch.dll` and
-> repacking the binary's IAT) — out of scope for this project.
+that **forwards the two DirectDraw calls to Wine's built-in `ddraw.dll`**
+via `LoadLibraryA` + `GetProcAddress`. Drop it next to `Runtime.exe` and
+the game thinks it's talking to a real DirectDraw provider; in reality,
+Wine's modern DirectDraw stack handles the calls — including the
+`dgVoodoo2` `D3DImm.dll` / `DDraw.dll` chain that maps legacy DirectDraw
+to Vulkan.
 
 ## Why a forwarder instead of reimplementing DirectDraw
 
@@ -61,6 +64,8 @@ variable in `build.sh` if yours differs.
 
 ## Install
 
+### GOG release
+
 After running `build.sh`, launch the game through Steam (Proton) or Wine:
 
 ```bash
@@ -73,6 +78,30 @@ wine Runtime.exe
 ```
 
 You should reach the main menu and play the 3D portions of the game.
+
+### Steam release
+
+The original 1999 Steam binary has no `patch.dll` indirection. The good
+news: Proton's DLL override system (`WINEDLLOVERRIDES=ddraw=n,b`) typically
+routes DirectDraw calls to Wine's builtin `ddraw.dll` without us needing
+to ship a shim at all. Try just launching Omikron in Steam first.
+
+If the Steam version crashes or fails to initialize the screen (typically
+on Proton-GE 9-x with the `DIERR_DEVICENOTREG` DirectInput bug), either:
+
+1. Switch Proton version to **Proton-GE 8-32** (most stable for this game),
+   or
+2. Install our `patch.dll` as a Steam override:
+   - Set Steam Launch Options to:
+     `WINEDLLOVERRIDES=ddraw=n,b %command%`
+   - Place `patch.dll` from this repo into the Steam Omikron install
+     directory (typically `~/.steam/steam/steamapps/common/Omikron/`).
+
+If you go the second route, you'll also need to introduce the indirection
+into `Runtime.exe` itself — repack its IAT to import from `patch.dll`
+instead of `ddraw.dll`. That's a larger surgery and out of scope for the
+initial release; see [MAKINGOF.md](MAKINGOF.md) for the technical
+background.
 
 ## Known Issues
 

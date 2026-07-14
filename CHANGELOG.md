@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- README and MAKINGOF: clarified that the patch applies to both GOG and
+  Steam releases, with a Steam-specific install section explaining the
+  Proton `WINEDLLOVERRIDES` shortcut for the 1999 binary that lacks the
+  `patch.dll` indirection layer.
+
 ## [0.1.0] - 2026-07-14
 
 ### Added

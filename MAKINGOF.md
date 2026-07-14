@@ -12,34 +12,39 @@ on modern systems.
 
 ## The Problem
 
-The GOG release of *Omikron* (2017 re-release) ships a small **indirection
-layer**: `Runtime.exe` imports `DirectDrawCreate` and `DirectDrawEnumerateA`
-from a file called `patch.dll`, not directly from `ddraw.dll`. We
-discovered this by disassembling `Runtime.exe` with `objdump -p`:
+The game imports two DirectDraw functions from somewhere — and the exact
+"somewhere" depends on which release you own:
 
-```
-DLL Name: PATCH.dll
-  531ef2   9  DirectDrawEnumerateA
-  531ede   7  DirectDrawCreate
-```
+- **GOG release (2017):** `Runtime.exe` imports the two functions from
+  `patch.dll`. We confirmed this by disassembling the GOG `Runtime.exe`
+  with `objdump -p`:
 
-GOG added this indirection so the DirectDraw provider could be swapped out
-without modifying the original 1999 binary. In a clean Wine prefix with
-GOG's stock `patch.dll`, the imports resolve and the game launches — but
-the exact behavior depends on which Proton version's `ddraw.dll` ends up
-shadowing Wine's, and on whether Steam/Wine have placed a different
-DirectDraw shim ahead of it.
+  ```
+  DLL Name: PATCH.dll
+    531ef2   9  DirectDrawEnumerateA
+    531ede   7  DirectDrawCreate
+  ```
+
+  GOG added this indirection so the DirectDraw provider could be swapped
+  out without modifying the original 1999 binary. Our `patch.dll`
+  replacement sits in this slot.
+
+- **Steam release (1999 original):** the binary predates GOG's
+  indirection. `Runtime.exe` likely imports directly from `ddraw.dll`.
+  Proton's `WINEDLLOVERRIDES=ddraw=n,b` usually handles this by
+  forcing Wine's builtin DirectDraw stack. On broken Proton versions
+  (notably Proton-GE 9-4 with `DIERR_DEVICENOTREG`), you'd need to
+  manually repack `Runtime.exe`'s IAT to import from `patch.dll`
+  instead — significantly more work than the GOG case.
+
+In both cases, the runtime behaviour depends on which Proton version
+ends up shadowing Wine's `ddraw.dll`, and on whether the user has placed
+a different DirectDraw shim (`dgVoodoo2`, `D3DImm`, etc.) ahead of it.
 
 Some Proton versions work. Some don't. The game also crashes on startup in
 certain versions because of a `DIERR_DEVICENOTREG` (DirectInput device not
 registered) bug specific to those Proton builds. There is no single
 Proton version that "just works."
-
-> **Steam release:** the original 1999 Steam version does **not** ship a
-> `patch.dll` indirection layer. `Runtime.exe` links directly against
-> `ddraw.dll`. This patch is **GOG-only** — adapting it for Steam would
-> require repacking the binary's IAT to insert the indirection, which is
-> a much larger surgery and out of scope for this project.
 
 ## The Insight
 
