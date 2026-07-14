@@ -50,11 +50,14 @@ done
 # --- Build ------------------------------------------------------------
 
 echo "=== Compiling src/forwarder.c ==="
-i686-w64-mingw32-gcc -shared -Os \
+i686-w64-mingw32-gcc -shared -Os -g0 \
+  -fno-asynchronous-unwind-tables \
+  -fno-ident \
   -Wl,--image-base=0x10000000 \
   -Wl,--no-seh \
   -Wl,--exclude-libs=ALL \
   -Wl,--gc-sections \
+  -Wl,--strip-debug \
   -Wl,-s \
   -Wl,-u,_DirectDrawCreate@12 \
   -Wl,-u,_DirectDrawEnumerateA@8 \
