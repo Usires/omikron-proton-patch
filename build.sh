@@ -50,16 +50,18 @@ done
 # --- Build ------------------------------------------------------------
 
 echo "=== Compiling src/forwarder.c ==="
-i686-w64-mingw32-gcc -shared \
+i686-w64-mingw32-gcc -shared -Os \
   -Wl,--image-base=0x10000000 \
   -Wl,--no-seh \
   -Wl,--exclude-libs=ALL \
+  -Wl,--gc-sections \
+  -Wl,-s \
   -Wl,-u,_DirectDrawCreate@12 \
   -Wl,-u,_DirectDrawEnumerateA@8 \
   -Wl,--kill-at \
   -o patch.dll \
   src/forwarder.c \
-  -lgcc
+  -lkernel32
 
 # --- Validate ---------------------------------------------------------
 
