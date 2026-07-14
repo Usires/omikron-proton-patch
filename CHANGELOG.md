@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- README and MAKINGOF: clarified that the patch applies to both GOG and
-  Steam releases, with a Steam-specific install section explaining the
-  Proton `WINEDLLOVERRIDES` shortcut for the 1999 binary that lacks the
-  `patch.dll` indirection layer.
+- README and MAKINGOF: corrected the assumption that the Steam release
+  lacked the `patch.dll` indirection. Verified by comparing the Steam
+  and GOG `Runtime.exe` binaries via MD5 — they are identical
+  (`02867565a7cf5775d7bc7c905aab9250`), and both import
+  `DirectDrawCreate` / `DirectDrawEnumerateA` from `PATCH.dll`. The
+  indirection is part of the original 1999 binary, not a GOG addition.
+- README install section merged: both GOG and Steam use the same
+  procedure (drop `patch.dll` next to `Runtime.exe`).
 
 ## [0.1.0] - 2026-07-14
 

@@ -12,34 +12,37 @@ on modern systems.
 
 ## The Problem
 
-The game imports two DirectDraw functions from somewhere — and the exact
-"somewhere" depends on which release you own:
+`Runtime.exe` imports two functions from `patch.dll`:
 
-- **GOG release (2017):** `Runtime.exe` imports the two functions from
-  `patch.dll`. We confirmed this by disassembling the GOG `Runtime.exe`
-  with `objdump -p`:
+- `DirectDrawCreate`
+- `DirectDrawEnumerateA`
 
-  ```
-  DLL Name: PATCH.dll
-    531ef2   9  DirectDrawEnumerateA
-    531ede   7  DirectDrawCreate
-  ```
+This is true for **both** the GOG (2017) and Steam releases — verified
+by MD5:
 
-  GOG added this indirection so the DirectDraw provider could be swapped
-  out without modifying the original 1999 binary. Our `patch.dll`
-  replacement sits in this slot.
+```
+$ md5sum Runtime.exe
+02867565a7cf5775d7bc7c905aab9250  Runtime.exe
+```
 
-- **Steam release (1999 original):** the binary predates GOG's
-  indirection. `Runtime.exe` likely imports directly from `ddraw.dll`.
-  Proton's `WINEDLLOVERRIDES=ddraw=n,b` usually handles this by
-  forcing Wine's builtin DirectDraw stack. On broken Proton versions
-  (notably Proton-GE 9-4 with `DIERR_DEVICENOTREG`), you'd need to
-  manually repack `Runtime.exe`'s IAT to import from `patch.dll`
-  instead — significantly more work than the GOG case.
+The GOG and Steam versions ship the **identical** binary. The
+`patch.dll` indirection is not a GOG addition — it was already part of
+the Quantic Dream / Eidos shipping layout from 1999, designed to let the
+DirectDraw provider be swapped at deployment time.
 
-In both cases, the runtime behaviour depends on which Proton version
-ends up shadowing Wine's `ddraw.dll`, and on whether the user has placed
-a different DirectDraw shim (`dgVoodoo2`, `D3DImm`, etc.) ahead of it.
+Confirmed by `objdump -p`:
+
+```
+DLL Name: PATCH.dll
+  531ef2   9  DirectDrawEnumerateA
+  531ede   7  DirectDrawCreate
+```
+
+In a clean Wine prefix with the stock `patch.dll`, the imports resolve
+and the game launches — but the exact behaviour depends on which Proton
+version's `ddraw.dll` ends up shadowing Wine's, and on whether the user
+has placed a different DirectDraw shim (`dgVoodoo2`, `D3DImm`, etc.)
+ahead of it.
 
 Some Proton versions work. Some don't. The game also crashes on startup in
 certain versions because of a `DIERR_DEVICENOTREG` (DirectInput device not
