@@ -1,0 +1,21 @@
+# Build artifacts
+*.dll
+*.o
+*.obj
+
+# Original backups (should never be committed)
+*.original
+*.original.bak
+
+# Editor / OS junk
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Python (if someone adds CI scripts later)
+__pycache__/
+*.pyc
+*.pyo
