@@ -3,6 +3,15 @@
 A small Windows DLL that lets **Omikron: The Nomad Soul** (1999, Eidos /
 Quantic Dream) run under Linux via Wine or Proton.
 
+[![Build patch.dll](https://github.com/Usires/omikron-proton-patch/actions/workflows/build.yml/badge.svg)](https://github.com/Usires/omikron-proton-patch/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/Usires/omikron-proton-patch)](https://github.com/Usires/omikron-proton-patch/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+> **Want the ready-to-use DLL?** Download the latest
+> [`patch.dll`](https://github.com/Usires/omikron-proton-patch/releases/latest)
+> from the Releases page — drop it next to `Runtime.exe` in your Omikron
+> install directory.
+
 ## What it does
 
 The game's `Runtime.exe` imports `DirectDrawCreate` and `DirectDrawEnumerateA`
@@ -96,6 +105,8 @@ Recommended: **Proton-GE 8-32** until the GStreamer / FMV issue is resolved.
 
 - [`MAKINGOF.md`](MAKINGOF.md) — full reverse-engineering notes, dgVoodoo
   setup, Proton test log, and Wine internals walkthrough.
+- [`docs/CI.md`](docs/CI.md) — how the GitHub Actions build and release
+  pipelines work, and how to ship your own release.
 
 ## Credits
 

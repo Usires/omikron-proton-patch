@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'   # Triggers on v0.1.0, v1.0.0, etc.
+
+jobs:
+  build-and-release:
+    name: Build DLL and publish release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Required to create the release.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Full history for changelog generation.
+
+      - name: Install MinGW-w64 i686 toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gcc-mingw-w64-i686 \
+            binutils-mingw-w64-i686
+
+      - name: Build patch.dll
+        run: ./build.sh
+
+      - name: Extract changelog section for this version
+        id: changelog
+        run: |
+          # Extract the section starting at the version header matching
+          # the current tag and ending at the next version header (or EOF).
+          VERSION="${GITHUB_REF_NAME}"   # e.g. v0.1.0
+          SECTION=$(awk "/^## \\[${VERSION}\\]/,/^## \\[/{ if (/^## \\[${VERSION}\\]/) p=1; else if (/^## \\[/) p=0; if (p) print }" CHANGELOG.md)
+          if [ -z "$SECTION" ]; then
+            echo "::warning::No CHANGELOG.md section found for ${VERSION}; using default notes."
+            SECTION="Release ${VERSION}. See CHANGELOG.md for details."
+          fi
+          echo "section<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$SECTION" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: |
+            ## ${{ github.ref_name }}
+
+            ${{ steps.changelog.outputs.section }}
+
+            ---
+
+            **Asset:** `patch.dll` — drop this next to `Runtime.exe` in your
+            Omikron install directory. See the [README](https://github.com/${{ github.repository }}#install)
+            for full install instructions.
+
+            Built by GitHub Actions on ubuntu-latest with `gcc-mingw-w64-i686`.
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}   # v1.0.0-alpha etc. → prerelease
+          files: |
+            patch.dll

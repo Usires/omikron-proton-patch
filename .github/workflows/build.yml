@@ -1,0 +1,58 @@
+name: Build patch.dll
+
+on:
+  # Build on every push and PR to validate the source compiles cleanly.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Manual trigger for ad-hoc builds.
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on Ubuntu (i686-mingw32)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MinGW-w64 i686 toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gcc-mingw-w64-i686 \
+            binutils-mingw-w64-i686
+
+      - name: Build patch.dll
+        run: ./build.sh
+
+      - name: Verify DLL structure
+        run: |
+          echo "=== File ==="
+          ls -la patch.dll
+          file patch.dll || true
+
+          echo
+          echo "=== Exports ==="
+          i686-w64-mingw32-objdump -p patch.dll | grep -A 20 "Export Tables"
+
+          echo
+          echo "=== Imports (should be ONLY kernel32.dll) ==="
+          i686-w64-mingw32-objdump -p patch.dll | grep -E "DLL Name|^[[:space:]]*[0-9]+"
+
+          echo
+          echo "=== UCRT check (must be empty) ==="
+          if i686-w64-mingw32-objdump -p patch.dll | grep -q "api-ms-win-crt"; then
+            echo "FAIL: UCRT dependency found"
+            exit 1
+          fi
+          echo "OK: no UCRT dependencies"
+
+      - name: Upload patch.dll artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-dll
+          path: patch.dll
+          if-no-files-found: error
